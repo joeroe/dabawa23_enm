@@ -580,7 +580,7 @@ University of Bern
 ::: {.column}
 **These slides**
 
-{{< bi easel3 >}} [https://joeroe.io/dabawa23_enm](https://joeroe.io/dabawa23_enm)  
+{{< bi easel3 >}} [joeroe.io/dabawa23_enm](https://joeroe.io/dabawa23_enm/dabawa23_enm.html)  
 {{< bi github >}} [joeroe/dabawa23_enm](https://github.com/joeroe/dabawa23_enm)  
 {{< ai doi >}} [xxx.xxx.xxx](https://zenodo.org/)
 :::
