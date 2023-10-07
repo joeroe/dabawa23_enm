@@ -8,6 +8,11 @@ You will need to install the R packages listed at the top of the document before
 
 ## How to view the slides
 
+### Locally
+
+`dabawa23_enm.html` is a self-contained HTML document containing the slides.
+To view them, download or clone it and open it in a web browser.
+
 ### Online
 
 The built slides are available online at <http://joeroe.io/dabawa23/dabawa23_enm.html>
