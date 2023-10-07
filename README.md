@@ -17,7 +17,7 @@ To view them, download or clone it and open it in a web browser.
 
 ### Online
 
-The built slides are available online at <http://joeroe.io/dabawa23/dabawa23_enm.html>
+The built slides are available online at <http://joeroe.io/dabawa23_enm/dabawa23_enm.html>
 
 Press `s` in the presentation window to view the speaker notes.
 
