@@ -1,0 +1,70 @@
+taxon	taxon_original	n_present	p_present	n_occ
+Adonis flammea	Adonis flammea	3	0.020689655172413793	32
+Aegilops crassa	Aegilops crassa	4	0.027586206896551724	143
+Aegilops speltoides	NA	NA	NA	1379
+Aegilops tauschii	NA	NA	NA	666
+Aizoanthemopsis hispanica	Aizoon hispanicum	7	0.04827586206896552	288
+Ammi majus	Ammi majus	6	0.041379310344827586	408
+Androsace maxima	Androsace maxima	20	0.13793103448275862	68
+Arnebia decumbens	Arnebia decumbens	25	0.1724137931034483	227
+Arnebia linearifolia	Arnebia linearifolia	14	0.09655172413793103	148
+Atriplex prostrata	Atriplex prostrata	4	0.027586206896551724	53
+Avena sterilis	Avena sterilis	3	0.020689655172413793	47512
+Bassia arabica	Bassia arabica	3	0.020689655172413793	228
+Bolboschoenus glaucus	Bolboschoenus glaucus	7	0.04827586206896552	6
+Bolboschoenus maritimus	Bolboschoenus maritimus	33	0.22758620689655173	281
+Bolboschoenus maritimus	Scirpus maritimus	33	0.22758620689655173	281
+Brachypodium distachyon	Brachypodium distachyon	4	0.027586206896551724	1281
+Bromus sterilis	Bromus sterilis	3	0.020689655172413793	254
+Buglossoides arvensis	Buglossoides arvensis	25	0.1724137931034483	122
+Buglossoides tenuiflora	Buglossoides tenuiflora	31	0.21379310344827587	134
+Capparis spinosa	Capparis spinosa	5	0.034482758620689655	3180
+Carex divisa	Carex divisa	10	0.06896551724137931	156
+Cephalaria syriaca	Cephalaria syriaca	3	0.020689655172413793	135
+Chenopodium album	Chenopodium album	5	0.034482758620689655	218
+Cicer reticulatum	Cicer arietinum	6	0.041379310344827586	193
+Ficus carica	Ficus carica	10	0.06896551724137931	2463
+Fumaria densiflora	Fumaria densiflora	4	0.027586206896551724	143
+Glaucium aleppicum	Glaucium aleppicum	3	0.020689655172413793	22
+Gypsophila pilosa	Gypsophila pilosa	4	0.027586206896551724	67
+Gypsophila vaccaria	Vaccaria pyramidata	11	0.07586206896551724	292
+Helianthemum ledifolium	Helianthemum ledifolium	3	0.020689655172413793	628
+Hordeum bulbosum	Hordeum bulbosum	6	0.041379310344827586	1755
+Hordeum murinum	Hordeum murinum	4	0.027586206896551724	914
+Hordeum spontaneum	Hordeum spontaneum	62	0.42758620689655175	6550
+Hordeum spontaneum	Hordeum vulgare	62	0.42758620689655175	6550
+Lathyrus aphaca	Lathyrus aphaca	4	0.027586206896551724	1657
+Lathyrus oleraceus	Pisum elatius	8	0.05517241379310345	1380
+Lathyrus oleraceus	Pisum sativum	8	0.05517241379310345	1380
+Lathyrus sativus	Lathyrus sativus	4	0.027586206896551724	241
+Linum bienne	Linum bienne	11	0.07586206896551724	100
+Linum bienne	Linum usitatissimum	11	0.07586206896551724	100
+Lolium rigidum	Lolium rigidum	3	0.020689655172413793	1194
+Lolium temulentum	Lolium temulentum	5	0.034482758620689655	86
+Medicago astroites	Trigonella astroites	16	0.1103448275862069	118
+Medicago radiata	Medicago radiata	21	0.14482758620689656	873
+Phalaris paradoxa	Phalaris paradoxa	3	0.020689655172413793	298
+Pistacia atlantica	Pistacia atlantica	7	0.04827586206896552	725
+Poa bulbosa	Poa bulbosa	5	0.034482758620689655	1144
+Polygonum arenarium arenarium	Polygonum venantianum	7	0.04827586206896552	5
+Polygonum corrigioloides	Polygonum corrigioloides	6	0.041379310344827586	4
+Prosopis farcta	Prosopis farcta	7	0.04827586206896552	1084
+Quercus ithaburensis	Quercus ithaburensis	3	0.020689655172413793	1154
+Rumex pulcher	Rumex pulcher	7	0.04827586206896552	621
+Salsola kali	Salsola kali	6	0.041379310344827586	267
+Secale cereale	Secale cereale	4	0.027586206896551724	522
+Taeniatherum caput-medusae	Taeniatherum caput-medusae	6	0.041379310344827586	143
+Triticum aestivum compactum	Triticum aestivum compactum	3	0.020689655172413793	122
+Triticum durum	Triticum durum	4	0.027586206896551724	167
+Triticum monococcum aegilopoides	Triticum boeoticum	44	0.30344827586206896	2902
+Triticum monococcum aegilopoides	Triticum monococcum	44	0.30344827586206896	2902
+Triticum turgidum dicoccum	Triticum aestivum	64	0.4413793103448276	62
+Triticum turgidum dicoccum	Triticum dicoccoides	64	0.4413793103448276	62
+Triticum turgidum dicoccum	Triticum dicoccum	64	0.4413793103448276	62
+Triticum urartu	NA	NA	NA	2005
+Verbena officinalis	Verbena officinalis	3	0.020689655172413793	853
+Vicia ervilia	Vicia ervilia	33	0.22758620689655173	672
+Vicia faba	Vicia faba	8	0.05517241379310345	1734
+Vicia narbonensis	Vicia narbonensis	3	0.020689655172413793	1297
+Vicia orientalis	Lens culinaris	17	0.11724137931034483	367
+Vitis sylvestris	Vitis sylvestris	4	0.027586206896551724	3

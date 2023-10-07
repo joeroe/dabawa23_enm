@@ -1,0 +1,614 @@
+---
+title: "Modelling the range of wild plants and crop progenitors in the Late&nbsp;Epipalaeolithic–Early&nbsp;Neolithic Levant"
+author:
+  name: Joe Roe
+  url: "https://joeroe.io"
+  affiliation: "University of Bern"
+title-slide-attributes:
+  data-background-image: images/Triticum_turgidum_illustration.png
+  data-background-size: contain
+  data-background-position: right
+format: 
+  revealjs:
+    theme: [default, dabawa23_enm.scss]
+    transition: slide
+    logo: images/unibe_logo.png
+    footer: "Joe Roe – Modelling the range of wild plants and crop progenitors in the Late Epipalaeolithic–Early Neolithic Levant"
+    embed-resources: true
+execute:
+  cache: true
+---
+
+## Setup {visibility=hidden}
+
+```{r dependencies}
+library(dplyr)
+library(ggplot2)
+library(ggspatial)
+library(gt)
+library(khroma)
+library(readr)
+library(patchwork)
+library(purrr)
+library(sf)
+library(stars)
+library(tibble)
+```
+
+```{r define-regions}
+latlong <- 4326
+utm37n <- 32637
+
+w_asia <- st_bbox(c(xmin = 30, xmax = 50, ymin = 25, ymax = 40), crs = 4326)
+s_levant <- st_bbox(c(xmin = 34, xmax = 39, ymin = 29, ymax = 34), crs = 4326)
+```
+
+```{r define-periods}
+archaeo_periods <- tribble(
+  ~period,             ~agriculture,                          ~start_bp, ~end_bp,
+  "Late Epipal.",      "Foraging",                            15000,     11700,
+  "PPNA",              "Pre-domestication cultivation",       11700,     10700,
+  "EPPNB",             "Cultivation of domesticated species", 10700,     10200,
+  "MPPNB",             "Cultivation of domesticated species", 10200,     9500,
+  "LPPNB/C",           "Agriculture",                         9500,      8500,
+  "Pottery Neolithic", "Agriculture",                         8500,      6500,
+  "Chalcolithic",      "Agriculture",                         6500,      5000,
+)
+
+neolithic <- c("PPNA", "EPPNB", "MPPNB", "LPPNB/C", "Pottery Neolithic")
+```
+
+```{r read-basemap}
+buffer_bbox <- function(bbox, add) {
+  sf::st_bbox(c(
+    xmin = bbox[["xmin"]] - add,
+    xmax = bbox[["xmax"]] + add,
+    ymin = bbox[["ymin"]] - add,
+    ymax = bbox[["ymax"]] + add
+  ))
+}
+
+# Turn off s2 to cope with dodgy geometries
+use_s2 <- sf_use_s2(FALSE)
+
+ne_countries <- read_sf("data/ne", "ne_10m_admin_0_countries")
+
+ne_lakes <- read_sf("data/ne", "ne_10m_lakes") |> 
+  st_geometry() |>
+  st_crop(buffer_bbox(w_asia, 10)) |>
+  st_union()
+
+ne_ocean <- read_sf("data/ne", "ne_10m_ocean") |>
+  st_geometry() |>
+  st_crop(buffer_bbox(w_asia, 10)) |>
+  st_union()
+
+ne_land <- read_sf("data/ne", "ne_10m_land") |> 
+  st_geometry() |>
+  st_crop(buffer_bbox(w_asia, 10)) |>
+  st_difference(ne_ocean) |>
+  st_difference(ne_lakes) |>
+  st_union()
+
+s_levant_land <- st_intersection(st_as_sfc(s_levant), ne_land)
+w_asia_land <- st_intersection(st_as_sfc(w_asia), ne_land)
+
+# Restore previous setting of s2
+#sf_use_s2(use_s2)
+```
+
+```{r read-archaeo_flora}
+archaeo_flora <- read_tsv("data/swasia_neolithic_flora.tsv")
+
+archaeo_flora |>
+  rename(taxon_group = "taxon", taxon = "taxon_detail") |>
+  mutate(
+    age_mid = age_end + ((age_start - age_end) / 2),
+    period = cut(-age_mid,
+                 breaks = -c(archaeo_periods$start_bp, 0),
+                 labels = archaeo_periods$period,
+                 ordered_result = TRUE)
+  ) ->
+  archaeo_flora
+```
+
+---
+
+## Abstract {visibility=hidden}
+
+Late Epipalaeolithic and Early Neolithic societies in the Levant were amongst the first in the world to begin cultivating wild plants and, eventually, domesticating crops.
+The transition is well-documented in the archaeobotanical record and other palaeoecological proxies from this period, however these give 'snapshots' of flora at particular times and places, usually significantly conditioned by human action and various taphonomic processes.
+We cannot fully understand the economic choices of the first farmers without considering the wider, natural (or at least less anthropogenic) ecologies which they inhabited.
+Ecological niche modelling (ENM), also known as species distribution modelling, is widely used by ecologists to predict the ranges of plants and animals in the future or in hypothetical scenarios.
+ENM models are typically 'trained' on observed occurrences of the species of interest in relation to a number of environmental variables, then used to predict the probability of occurrence in an altered environment described by the same variables.
+They have also been applied to archaeology and palaeoecology, where the altered environment is typically a reconstruction of past conditions, however until recently this has been limited by the difficulty of obtaining occurrence data and palaeoclimate reconstructions of sufficient coverage.
+This is been especially true of West Asia, where key datasets used for ENM in other regions have often been lacking.
+
+Here I present an application of ecological niche modelling can be used to reconstruct the ranges of several key wild plants and crop progenitors in the Levant over the course of the Late Epipalaeolithic and Early Neolithic.
+Recently-published open data on occurrences and a variety of (palaeo)environmental indicators, as well as advances in statistical methodology and software, has made it much more feasible to apply ENM in the context of the archaeology of West Asia.
+I also explore the use of *archaeological* occurrence data—drawn from the archaeobotanical, zooarchaeology, and radiocarbon records—to assess the accuracy of model predictions.
+This is an important prerequisite to establishing ENM as a reliable method of reconstructing past ecologies, but remains hampered by the relatively slow progress of open data in archaeology compared to ecology and climate science.
+
+### Keywords
+
+Prehistory; Levant; ecology
+
+---
+
+![<small>Gronenborn et al. 2021, <https://doi.org/10.5281/zenodo.5903165></small>](images/RGZM_OAI_Neolithic_Exp_2021.2.jpg)
+
+::: {.notes}
+Hi, my name is Joe Roe, I work at the Institute of Archaeological Sciences here in Bern.
+Today I'd like to talk about computational models of the geographical range of plants in past environments.
+
+My background is in computational archaeology, broadly speaking, but also in West Asian prehistory.
+So I'm interested in using these models to understand the ecological context of the emergence of agriculture in the Neolithic of West Asia.
+This represented, as far as we know, the first settled farming societies in the world, as well as the centre of origin for later agricultural economies across Europe, North Africa and a large part of Asia.
+So although there were of course other places were domestication took place independently, the West Asian Neolithic is really chapter one in the story of the prehistory of farming, in most of the world.
+
+When we talk about the emergence of agriculture in those regions were domestication took place (as opposed to where already-domesticated crops were transplanted), there's no clean break between "forager" and "farmer", or "wild" and "domestic".
+Instead we have to recognise a sequence of stages in people's relationship with (in this case) plants.
+Domestication—the alteration of an organism's physiology due to human selection—is the clearest sign of the emergence of an agricultural economy, but by definition it must be preceded by a phase of "pre-domestication cultivation", which in turn could well be preceded by forms of management that sit somewhere between 'gathering' and 'cultivation'.
+Conversely, the appearance of domestic crops does not mean that the society is now a farming one; 'cultivation' can be a relatively low-intensity activity (think scattering seeds into a floodplain and coming back a few months later), and can still represent a minor part of the subsistence base in comparison to wild foods.
+
+Plants have short generations, so theoretically this whole process (cultivation to domestication to full-blown agriculture) could happen in a matter of decades.
+At one point this was indeed what we thought happened in West Asia – there was a small region, a "golden triangle", where people began cultivating, and then rapidly domesticated, a core package of "founder crops" right at the beginning of the Neolithic.
+:::
+
+---
+
+## {.smaller}
+
+:::: {.columns}
+
+::: {.column}
+![<small>Arranz-Otaegui et al. 2016, <https://doi.org/10.1073/pnas.1612797113></small>](images/arranz_otaegui_et_al_2016_fig1.jpeg)
+
+![<small>Arranz-Otaegui et al. 2018, <https://doi.org/10.1016/j.quascirev.2018.02.011></small>](images/arranz_otaegui_et_al_2018_fig8.jpg)
+:::
+
+::: {.column}
+![<small>Arranz-Otaegui & Roe 2023, <https://doi.org/10.1007/s00334-023-00917-1></small>](images/arranz_otaegui_and_roe_2023_fig3.webp)
+:::
+
+::::
+
+::: {.notes}
+Today, I think it's fair to say that the consensus has shifted to recognising a much more protracted transition.
+We can see the earliest signs of pre-domestication cultivation well into the Epipalaeolithic, perhaps as far back as 20,000 years ago during the height of the last glaciation.
+We also now know, from genetic and physiological studies, that the domestication of plants generally happened *very* slowly, so slowly in fact that it was probably imperceptible to the humans involved.
+And post-domestication, we can see that it took a long time, and a lot of experimentation with many different plants, before anything like the familiar agricultural economy based on arable crops emerged – probably not until well into the latter part of the Pre-Pottery Neolithic, after c. 8000 BC.
+
+With this stretching of the timeline we've also, probably unsurprisingly, also come to recognise that the transition took place over a very wide area (about the same size of Europe) with a very diverse range of ecologies and domesticable species available.
+And this was a time of significant climatic change—the Pleistocene to Holocene transition—so that map will have been constantly changing.
+:::
+
+---
+
+```{r plot-ecoregions}
+ecoregions <- read_sf("data/wwf_teow", "wwf_terr_ecos") |>
+  st_crop(buffer_bbox(w_asia, 2.5)) |>
+  filter(ECO_NAME != "Lake")
+
+ggplot() +
+  layer_spatial(ne_land, fill = "white") +
+  layer_spatial(aes(fill = ECO_NAME), data = ecoregions, show.legend = FALSE,
+		colour = NA) +
+  layer_spatial(ne_lakes, fill = "white", colour = "#555555") +
+  layer_spatial(ne_land, fill = NA, colour = "#555555") +
+  coord_sf(xlim = w_asia[c("xmin", "xmax")],
+           ylim = w_asia[c("ymin", "ymax")],
+           crs = utm37n,
+           default_crs = latlong) +
+  fixed_plot_aspect() +
+  labs(
+    title = "Ecoregions of West Asia",
+    caption = "Data: WWF Terrestrial Ecoregions of the World"
+  )
+			 
+```
+
+::: {.notes}
+For me, this radical recent change in our understanding of the pace and extent of the transition to agriculture really emphasises the importance of understanding its biogeographical context.
+Of course, we have archaeobotany and palynology, and so on, that gives us a wealth of information on the flora of particular times and places.
+But what's frequently missing is an idea of what was growing in the wider region, and how that changed through time:
+
+* What was the "wild range" of crop progenitors?
+* When did they start appearing outside it?
+* Do the plants we observe on archaeological sites merely reflect what was available in the local environment?
+
+I think these questions are really key to a fuller understanding of Neolithic economies.
+
+To try and get a clearer picture of this biogeographical/ecological context,
+I use an approach that's widely used in ecology, called species distribution modelling or, in this case more correctly, ecological niche modelling (ENM).
+I think the best way to illustrate what that is is to show you what kind of results you can get with it.
+So I'll start with that – 
+And explain more about how it actually works at the end of the presentation.
+:::
+
+---
+
+## Flax
+
+```{r flax}
+flax <- readRDS("data/rf_predictions/linum_bienne.rds")
+
+ggplot() +
+  annotation_spatial(ne_land, fill = "white") +
+  geom_stars(data = flax) +
+  annotation_spatial(ne_land, fill = NA, colour = "#555555") +
+  facet_wrap(~period, nrow = 2) +
+  scale_fill_batlow(reverse = TRUE) +
+  coord_sf(xlim = w_asia[c("xmin", "xmax")],
+           ylim = w_asia[c("ymin", "ymax")],
+           crs = latlong) +
+  fixed_plot_aspect() +
+  labs(
+    title = "Linum bienne",
+    fill = "Predicted occurrence",
+    x = NULL,
+    y = NULL
+  ) +
+  theme(
+    plot.title = element_text(face = "italic"),
+    legend.position = "none"
+  )
+```
+
+::: {.notes}
+First, a nice straightforward example.
+These maps show the modelled distributions of flax.
+
+The snapshots correspond to aggregated climatic periods, from the Last Glacial Maximum through to the Early Holocene (roughly coinciding with the Pre-Pottery Neolithic), to the modern day (the training data).
+The date ranges given are in *kiloannum* (thousand years ago) notation.
+
+The prediction is probabilistic.
+Not the probability of occurrence exactly; but the probability of classifying a location as "present", according to the model.
+In loose terms: how certain the model is about predicting occurrence in each cell.
+The lilac colour indicates zero, green is mid-values, and blue–purple is high certainty.
+
+Flax has traditionally been considered one of the "founder crops" of the Neolithic, but according to our analysis, it is actually barely present in Neolithic sites.
+Here we can see that the natural range is very small and is not predicted to have changed very much over the last 20,000 years ago
+So this perhaps explains its limited distribution in the earlier Neolithic; it is simply a plant with a limited range, and probably needed more time to adapt to wider environements than other, more naturally widespread crops.
+A modest finding – but what I think is important is that without this biogeographic background, we might be tempted to interpret the low ubiquity of flax on archaeological sites as an active choice not to use it, when in fact it looks just like .
+:::
+
+---
+
+## Rye
+
+```{r rye}
+rye <- readRDS("data/rf_predictions/secale_cereale.rds")
+
+ggplot() +
+  annotation_spatial(ne_land, fill = "white") +
+  geom_stars(data = rye) +
+  annotation_spatial(ne_land, fill = NA, colour = "#555555") +
+  facet_wrap(~period, nrow = 2) +
+  scale_fill_batlow(reverse = TRUE) +
+  coord_sf(xlim = w_asia[c("xmin", "xmax")],
+           ylim = w_asia[c("ymin", "ymax")],
+           crs = latlong) +
+  fixed_plot_aspect() +
+  labs(
+    title = "Secale cereale",
+    fill = "Predicted occurrence",
+    x = NULL,
+    y = NULL
+  ) +
+  theme(
+    plot.title = element_text(face = "italic"),
+    legend.position = "none"
+  )
+```
+
+::: {.notes}
+A perhaps more interesting result is for rye.
+
+Rye has always been a bit of a puzzle, because it is native to West Asia, and it *occasionally* show up in Neolithic archaeobotanical assemblages there.
+But it doesn't show up in large numbers, its domestic form, until much later, in the European Neolithic – so the question is where did it come from?
+Is it a West Asian domesticate, in which case why is it so rare there?
+Or did it perhaps spread with other cereal crops as a weed, then undergo a secondary domestication event in Europe?
+
+The model predicts that the prehistoric distribution of rye was significantly smaller than the modern range, notably excluding much of central and eastern Turkey, which were otherwise hotspots for domestication.
+Tentatively, I think this speaks against the weed-origin hypothesis: with this restricted range, it seems implausible that rye would have spread without more active human intervention.
+On the other hand, the indicated range suggests that we might find the origin of domestic rye in some unusual places: the Southern Levant, maybe, but with stronger confidence on Cyprus (not usually considered part of the centre of origin), western Anatolia, or even Greece.
+This is all very tentative – but interesting!
+:::
+
+---
+
+## Bread wheat
+
+![Polyploid wheat origins (Ian Alexander, redrawn after Golovnina et al. 2007, https://doi.org/10.1007/s00606-006-0478-x)](images/Polyploid_wheat_origins.png)
+
+::: {.notes}
+As a final example, we can look at the origins of bread wheat – by far the most common cultivated wheat today.
+Bread wheat has a very messy genetic history; it's actually a hybrid of several species of wild wheat *and* wild goatgrasses.
+The final hybridisation event (between emmer and a goatgrass species, probably *Aegilops tauschii*) took place during the Neolithic.
+Genetic data gives a rough estimate of 10,000 years ago and the earliest specimens of bread wheat showing up at Çatalhöyük, about 8000 years ago.
+But beyond that, we don't have a good understanding of when or where it bread wheat appeared.
+:::
+
+---
+
+## Bread wheat
+
+```{r wheat}
+emmer <- readRDS("data/rf_predictions/triticum_turgidum_dicoccum.rds")
+
+p_emmer <- ggplot() +
+  annotation_spatial(ne_land, fill = "white") +
+  geom_stars(data = emmer) +
+  annotation_spatial(ne_land, fill = NA, colour = "#555555") +
+  facet_wrap(~period, nrow = 2) +
+  scale_fill_batlow(reverse = TRUE) +
+  coord_sf(xlim = w_asia[c("xmin", "xmax")],
+           ylim = w_asia[c("ymin", "ymax")],
+           crs = latlong) +
+  fixed_plot_aspect() +
+  labs(
+    title = "Triticum turgidum dicoccum",
+    fill = "Predicted occurrence",
+    x = NULL,
+    y = NULL
+  ) +
+  theme(
+    plot.title = element_text(face = "italic"),
+    legend.position = "none"
+  )
+
+goatgrass <- readRDS("data/rf_predictions/aegilops_tauschii.rds")
+
+p_goatgrass <- ggplot() +
+  annotation_spatial(ne_land, fill = "white") +
+  geom_stars(data = goatgrass) +
+  annotation_spatial(ne_land, fill = NA, colour = "#555555") +
+  facet_wrap(~period, nrow = 2) +
+  scale_fill_batlow(reverse = TRUE) +
+  coord_sf(xlim = w_asia[c("xmin", "xmax")],
+           ylim = w_asia[c("ymin", "ymax")],
+           crs = latlong) +
+  fixed_plot_aspect() +
+  labs(
+    title = "Aegilops tauschii",
+    fill = "Predicted occurrence",
+    x = NULL,
+    y = NULL
+  ) +
+  theme(
+    plot.title = element_text(face = "italic"),
+    legend.position = "none"
+  )
+
+p_emmer + p_goatgrass
+```
+
+::: {.notes}
+Here we see the modelled ranges of these two progenitors.
+We can immediately see that the range of the goatgrass (right) is much smaller than wild emmer (left).
+So there likely weren't that many places where the hybridisation event could have taken place.
+:::
+
+---
+
+## Bread wheat
+
+```{r wheat2}
+emmer_log <- mutate(emmer, present = BA.cur.EH.HS1.YDS.LGM > 0.5)["present"]
+goatgrass_log <- mutate(goatgrass, present = BA.cur.EH.HS1.YDS.LGM > 0.5)["present"]
+
+ggplot() +
+  annotation_spatial(ne_land, fill = "white") +
+  geom_stars(data = emmer_log, alpha = 0.5) +
+  geom_stars(data = goatgrass_log, alpha = 0.5) +
+  annotation_spatial(ne_land, fill = NA, colour = "#555555") +
+  facet_wrap(~period, nrow = 2) +
+  scale_fill_manual(values = c(`TRUE` = "#001959", `FALSE` = NA), na.value = NA) +
+  coord_sf(xlim = w_asia[c("xmin", "xmax")],
+           ylim = w_asia[c("ymin", "ymax")],
+           crs = latlong) +
+  fixed_plot_aspect() +
+  labs(
+    title = "Triticum turgidum dicoccum + Aegilops tauschii",
+    x = NULL,
+    y = NULL
+  ) +
+  theme(
+    plot.title = element_text(face = "italic"),
+    legend.position = "none"
+  )
+```
+
+::: {.notes}
+If we turn the probabilistic classification into a binary one, present or not (in this case very roughly, P>0.5),
+then overlay the two predicted ranges,
+we can derive an estimate of where that might have been.
+
+As expected, there aren't many candidates!
+But immediately for me, one place that jumps out is this area around modern Homs in Syria.
+That's very plausible, since it's not far from the Middle Euphrates and important sites like Abu Hureyra and El Kowm.
+Which, as it happens...
+:::
+
+---
+
+## Bread wheat
+
+![<small>Benjamin Nowak, <https://twitter.com/BjnNowak/status/1648954308170338305></small>](images/nowak_tidytuesday.jpg)
+
+::: {.notes}
+...are the only two sites in our archaeobotanical database where both progenitor species and bread wheat are recorded.
+(This lovely figure was sent to me by an agronomist called Benjamin Nowak on Twitter).
+:::
+
+---
+
+## {.smaller .scrollable}
+
+```{r other_species}
+flora <- read_tsv("data/flora.tsv")
+flora |>
+  group_by(taxon, n_present, p_present, n_occ) |> 
+  summarise(taxon_original = list(c(taxon_original))) |>
+  ungroup() |>
+  mutate(
+    taxon_detail = map_chr(taxon_original, paste, collapse = ", "),
+    taxon_detail = if_else(taxon == taxon_detail, NA_character_, taxon_detail),
+  ) |>
+  select(-taxon_original) |>
+  filter(n_occ > 50) |>
+  arrange(-n_present) |>
+  gt() |>
+  cols_merge(
+    c(taxon, taxon_detail),
+    rows = !is.na(taxon_detail),
+    pattern = "{1}<br><small>(incl. {2})</small>"
+  ) |>
+  cols_label(
+    taxon = "Taxon", 
+    n_present = "Occurrences (Neolithic)", 
+    n_occ = "Occurrences (GBIF)"
+  ) |>
+  fmt_percent(p_present, decimals = 0) |>
+  cols_merge_n_pct(n_present, p_present) |>
+  tab_style(cell_text(style = "italic"), cells_body(taxon))
+```
+
+::: {.notes}
+Those are three examples.
+But one of the really nice things about this method is how repeatable it is.
+I've modelled a total of 55 species so far – basically everything that shows up on Neolithic sites, apart from a few where I couldn't get enough occurrence data.
+So if anybody is interested in hearing more about one in particular, please do feel free to ask me later.
+:::
+
+---
+
+![](images/enm_methodology.png)
+
+::: {.notes}
+So where do these models come from?
+I could of course spend a long time talking about the choice of modelling approach, parameterisation, data cleaning, and so on—and I'm very happy to, if anyone wants to find me afterwards!—but conceptually the method is really very simple.
+All you really need to know to understand where these predictions come from is this.
+
+The model is trained on two sets of data:
+
+- Species occurrences – that is, the coordinates of where the target species has been observed growing in the wild. Most people get these from an excellent XXXX
+- Environmental variables, typically climatic ones (precipitation, temperature, etc.), but you can also throw in topography, soil characteristics, anything you can get that you think is relevant to where plants grow, basically.
+
+Importantly, I use contemporary occurrence data and contemporary environmental data.
+This is different to how some archaeologists have used ENM in the past, which is to use *archaeological* occurrence data -- from archaeobotany, zooarchaeology, and so on.
+But personally I think it makes more sense to start with the high *quality* data we have on modern plant biogeography, to train the best model possible, and keep the archaeological record in reserve as a verification dataset.
+
+To train our model from these datasets, there are a number of options.
+I use a machine learning method called Random Forest, but there are also more standard regression approaches, Bayesian approaches, another machine learning technique called MaxEnt is also popular...
+But whichever you use, what you get out of it is a model that can be used to predict the occurrence of a species, given a set of environmental variables.
+
+So the final missing part of the puzzle is some paleoclimate data, which we can use to 'turn back the clock' on those environmental variables.
+Luckily, it's getting easier and easier to access hindcasted outputs from global climate models – those gigantic models the IPCC use to predict future climate change, with the dial turned backwards.
+I've for a long time used a great dataset called PaleoClim, which has global, high resolution data for the whole world, aggregated into the kind of climate period slices I've shown here.
+But I'm thinking for the next stage of this research I'll switch to continuous predictions, since those are now quite easy to get hold of.
+:::
+
+---
+
+![](images/enm_applications_wasia.png)
+
+::: {.notes}
+To finish up, I want to note that I'm by no means the first person to apply this method to archaeology.
+In a West Asian prehistory context there have been studies of for example domestic cattle, and the flora around Neolithic sites in Central Anatolia...
+:::
+
+---
+
+![Franklin et al. 2015, <https://doi.org/10.1016/j.quascirev.2014.12.015>](images/franklin_et_al_2014.png)
+
+::: {.notes}
+And this useful review article from 2015 (full reference is on the last slide) summarises case studies in other contexts
+In that article the authors suggest, and I full agree, that ENM has a very wide range of potential applications in archaeology.
+So do consider whether you could benefit from knowing more about the biogeography of your region and period of interest!
+:::
+
+---
+
+## Modellers ❤️ Open Data {.center}
+
+:::: {.columns}
+
+::: {.column}
+![](images/gbif_logo.webp)
+<https://gbif.org>
+:::
+
+::: {.column}
+![](images/paleoclim_logo.jpg)
+<http://www.paleoclim.org/>
+
+<small>(R 📦: <https://github.com/joeroe/rpaleoclim>)</small>
+:::
+
+::::
+
+::: {.notes}
+I also want to highlight that the methodology I've presented here is entirely dependent on open data.
+GBIF, PaleoClim, and similar datasets are extraordinarily useful resources for computational modelling in archaeology.
+And since I've been playing around with this approach for some time, I can say that year on year the release of new datasets (and tools) keeps making it easier and easier to apply.
+
+That does mean, unfortunately, that archaeology is the weak link.
+Getting together archaeobotanical and zooarchaeological data to verify these models, as I've suggested could be very useful here, is still not easy.
+That's why I'm really glad and grateful to see so much emphasis on collating, systemising and openly publishing different types of archaeological data.
+For people like me, whose research relies almost entirely on data reuse, it's essential.
+:::
+
+---
+
+## <small>Modelling the range of wild plants and crop progenitors in the Late Epipalaeolithic–Early Neolithic Levant</small> {.smaller}
+
+Joe Roe  
+University of Bern
+
+:::: {.columns}
+
+::: {.column}
+**Contact**
+
+{{< bi house-fill >}} <https://joeroe.io>  
+{{< bi envelope-fill >}} [joeroe@hey.com](mailto:joeroe@hey.com)  
+{{< bi mastodon >}} [joeroe@archaeo.social](https://archaeo.social/@joeroe)
+:::
+
+::: {.column}
+**These slides**
+
+{{< bi easel3 >}} [https://joeroe.io/dabawa23_enm](https://joeroe.io/dabawa23_enm)  
+{{< bi github >}} [joeroe/dabawa23_enm](https://github.com/joeroe/dabawa23_enm)  
+{{< ai doi >}} [xxx.xxx.xxx](https://zenodo.org/)
+:::
+
+::::
+
+::: aside
+Key references
+: Arranz-Otaegui, A. & Roe, J. 2023. Revisiting the concept of the 'Neolithic Founder Crops' in southwest Asia. *Vegetation History and Archaeobotany*. <https://doi.org/10.1007/s00334-023-00917-1>
+: Brown et al. 2018. PaleoClim, high spatial resolution paleoclimate surfaces for global land areas. *Nature Scientific Data*. <https://doi.org/10.1038/sdata.2018.254>
+: Franklin et al. 2015. Paleodistribution modeling in archaeology and paleoanthropology. *Quaternary Science Reviews*. <https://doi.org/10.1016/j.quascirev.2014.12.015>
+: Valavi et al. 2021. Modelling species presence-only data with random forests. *Ecography*. <https://doi.org/10.1111/ecog.05615>
+
+Acknowledgements
+: Amaia Arranz-Otaegui, Peter Yaworsky, Tobias Richter, Martin Hinz, Albert Hafner
+: C. L. Davids Fond og Samling, Swiss National Science Foundation
+:::
+
+::: {.notes}
+Thank you for your attention.
+If you want to know more:
+The underlying analysis of Neolithic subsistence economies that I've referred to here, was published earlier this year in *Vegetation History and Archaeobotany*.
+You can read that open access.
+I also hope to have a preprint of this analysis up... soon.
+You very welcome to follow me on social media, or check back on my website, to see when that's ready.
+
+To finish, I'm very grateful to the people and the funding bodies listed here for facilitating this research in various ways.
+And of course also to Silvana, Nicole, and Sebastian for organising this event.
+And I'm looking forward to your questions and comments.
+Thank you.
+:::
