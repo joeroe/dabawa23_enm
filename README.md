@@ -1,5 +1,7 @@
 # Modelling the range of wild plants and crop progenitors in the Late Epipalaeolithic–Early Neolithic Levant
 
+[![DOI](https://zenodo.org/badge/701654991.svg)](https://zenodo.org/badge/latestdoi/701654991)
+
 This research compendium contains the data and source code for a paper presented at "Digital Archaeology Bern – Ancient West Asia", Bern, 6–7 October 2023.
 
 The slides use `remark.js` and are generated using [Quarto](https://quarto.org).
